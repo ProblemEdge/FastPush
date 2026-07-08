@@ -474,12 +474,13 @@
 </head>
 <body>
 
-    <!-- SCREEN 1: モード選択 -->
+<!-- SCREEN 1: モード選択 -->
     <div id="screen-mode" class="screen active">
         <div class="arena-title">早押しバトルアリーナDX</div>
         <div class="mode-btn-container">
-            <button class="btn-box btn-green" onclick="selectMode('normal')">通常モード</button>
-            <button class="btn-box btn-red" onclick="selectMode('casino')">カジノモード</button>
+            <!-- ▼ (Aキー) / (Lキー) の説明を追加 -->
+            <button class="btn-box btn-green" onclick="selectMode('normal')">通常モード<br><span style="font-size: 0.6em;">(左のボタン)</span></button>
+            <button class="btn-box btn-red" onclick="selectMode('casino')">カジノモード<br><span style="font-size: 0.6em;">(右のボタン)</span></button>
         </div>
     </div>
 
@@ -592,7 +593,7 @@
             <div id="result-title-bottom" class="winner-subtitle">GREAT REACTION</div>
 
             <!-- APIでリセットをかけるボタン -->
-            <button class="reset-btn" onclick="resetToTitle(this)">タイトルへ戻る</button>
+            <button class="reset-btn" onclick="resetToTitle(this)">タイトルへ戻る<br><span style="font-size: 0.7em;">(ボタンを同時押し)</span>
         </div>
     </div>
 
@@ -619,8 +620,42 @@
         let debugP1Ready = false;
         let debugP2Ready = false;
 
-        // BGM用のAudioオブジェクト
-        const bgm = new Audio('assets/nandesyou.ogg');
+        // BGM用のAudioオブジェクトfselectMode
+
+
+
+
+
+
+
+
+
+
+        // ここに音楽を指定してください。例: 'bgm.mp3' など
+        const bgm = new Audio('assets/aitu.mp3');
+        const winSound = new Audio('assets/tappu.mp3');    // 勝利時のファンファーレなど
+        const pushSound = new Audio('assets/shot.mp3');    // 早押しをした瞬間の音
+        const btnSound = new Audio('assets/ok.mp3');   // メニュー画面などのボタン音
+
+
+
+
+
+        function playSound(audioObj) {
+            try {
+                if (!audioObj) return;
+                audioObj.currentTime = 0; // 再生位置をリセットして連続タップに対応
+                audioObj.play();
+            } catch (e) {
+                console.error("音声再生エラー:", e);
+            }
+        }
+
+
+
+
+
+
         bgm.loop = true;
 
         function showScreen(screenId) {
@@ -630,11 +665,18 @@
 
         // --- 1. モード選択と待機 ---
         function selectMode(mode) {
+
             gameMode = mode;
             // ユーザー操作きっかけでオーディオをアンロック
-            try { bgm.play().then(() => bgm.pause()); } catch(e) {}
+            try { bgm.play().then(() => bgm.pause()); 
+                winSound.play().then(() => winSound.pause());
+                btnSound.play().then(() => btnSound.pause());
+                pushSound.play().then(() => pushSound.pause());
             
+            } catch(e) {}
+                    
             showScreen('screen-wait');
+            playSound(btnSound); 
             startPolling();
         }
 
@@ -668,6 +710,7 @@
 
         // --- 手動入力での強制スタート ---
         function forceStart() {
+            playSound(btnSound); // ← 追加
             if (pollTimer) {
                 clearInterval(pollTimer);
                 pollTimer = null;
@@ -691,11 +734,26 @@
 
 
         // --- キーボード操作（待機画面での参加 ＆ ゲーム中の早押し） ---
+// ----------------------------------------------------
+        // 新しく追加: キーの同時押しを判定するための変数
+        const keysPressed = {};
+
+        // キーが押されたときの処理
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
+            keysPressed[key] = true; // 押されたキーを記録
+
+            // --- 1. モード選択画面 ---
+            if (document.getElementById('screen-mode').classList.contains('active')) {
+                if (key === 'a') {
+                    selectMode('normal');
+                } else if (key === 'l') {
+                    selectMode('casino');
+                }
+            }
             
-            // 待機画面中：AとLで強制準備完了
-            if (document.getElementById('screen-wait').classList.contains('active')) {
+            // --- 2. 待機画面中：AとLで強制準備完了 ---
+            else if (document.getElementById('screen-wait').classList.contains('active')) {
                 let changed = false;
                 if (key === 'a' && !debugP1Ready) {
                     debugP1Ready = true;
@@ -714,12 +772,30 @@
                 }
             }
 
-            // ゲーム進行中：AとLで早押し反応
-            if (gameState === 'ready' || gameState === 'go') {
+            // --- 3. ゲーム進行中：AとLで早押し反応 ---
+            else if (gameState === 'ready' || gameState === 'go') {
                 if (key === 'a') handlePush(1);
                 if (key === 'l') handlePush(2);
             }
+
+            // --- 4. リザルト画面：AとLの同時押しでタイトルへ戻る ---
+            else if (gameState === 'result' && document.getElementById('screen-result').classList.contains('active')) {
+                if (keysPressed['a'] && keysPressed['l']) {
+                    const resetBtn = document.querySelector('.reset-btn');
+                    // ボタンがまだ無効化（処理中）でなければ実行
+                    if (resetBtn && !resetBtn.disabled) {
+                        resetToTitle(resetBtn);
+                    }
+                }
+            }
         });
+
+        // キーが離されたときの処理
+        window.addEventListener('keyup', (e) => {
+            const key = e.key.toLowerCase();
+            keysPressed[key] = false; // 離されたキーの記録を消す
+        });
+        // ----------------------------------------------------
 
 
         // --- 2. ゲームプレイ開始 ---
@@ -751,6 +827,7 @@
 
         // スマホ画面タップ用
         function handlePush(playerNum) {
+            playSound(pushSound);
             if (gameState === 'ready') {
                 // フライング
                 clearTimeout(goTimeoutId);
@@ -913,6 +990,20 @@
                 titleBot.className = "winner-subtitle color-draw";
             }
             screenResult.classList.add('theme-' + themeKey);
+            // ==========================================
+            // 【追加】結果に応じて効果音を再生する
+            // ==========================================
+            try {
+                if (winner === 1 || winner === 2) {
+                    winSound.currentTime = 0; // 連続で鳴らせるように再生位置をリセット
+                    winSound.play();
+                } else {
+                    winSound.currentTime = 0;
+                    winSound.play();
+                }
+            } catch(e) {
+                console.error("効果音の再生エラー:", e);
+            }
 
             // タイム表示（数値の場合はカウントアップ演出、それ以外は即時表示）
             const timeP1El = document.getElementById('time-p1');
@@ -983,6 +1074,7 @@
 
         // --- 4. DBのリセットとタイトルへの帰還 ---
         async function resetToTitle(btn) {
+            playSound(btnSound); // ← 追加
             btn.disabled = true;
             btn.innerText = "リセット中...";
             
