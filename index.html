@@ -172,6 +172,12 @@
             transition: background 0.1s;
         }
 
+        /* カウントダウン用の装飾 */
+        .belt.countdown {
+            background: rgba(241, 196, 15, 0.9);
+            font-size: clamp(4rem, 10vw, 8rem);
+        }
+
         .belt.go {
             background: rgba(231, 76, 60, 0.9); /* 赤い帯（GO） */
             font-size: clamp(3rem, 7vw, 6rem);
@@ -478,7 +484,6 @@
     <div id="screen-mode" class="screen active">
         <div class="arena-title">早押しバトルアリーナDX</div>
         <div class="mode-btn-container">
-            <!-- ▼ (Aキー) / (Lキー) の説明を追加 -->
             <button class="btn-box btn-green" onclick="selectMode('normal')">通常モード<br><span style="font-size: 0.6em;">(左のボタン)</span></button>
             <button class="btn-box btn-red" onclick="selectMode('casino')">カジノモード<br><span style="font-size: 0.6em;">(右のボタン)</span></button>
         </div>
@@ -592,8 +597,7 @@
 
             <div id="result-title-bottom" class="winner-subtitle">GREAT REACTION</div>
 
-            <!-- APIでリセットをかけるボタン -->
-            <button class="reset-btn" onclick="resetToTitle(this)">タイトルへ戻る<br><span style="font-size: 0.7em;">(ボタンを同時押し)</span>
+            <button class="reset-btn" onclick="resetToTitle(this)">タイトルへ戻る<br><span style="font-size: 0.7em;">(ボタンを同時押し)</span></button>
         </div>
     </div>
 
@@ -606,55 +610,33 @@
         
         let gameMode = 'normal'; // 'normal' | 'casino'
         let pollTimer = null;
-        let gameData = null;     // DBから取得した { p1_id, p2_id, ... }
+        let gameData = null;
 
         // ゲーム進行用変数
-        let gameState = 'init';  // 'init' | 'ready' | 'go' | 'result'
+        let gameState = 'init';  // 'init' | 'countdown' | 'ready' | 'go' | 'result'
         let startTime = 0;
         let p1Time = null;
         let p2Time = null;
         let goTimeoutId = null;
         let endTimerId = null;
         
-        // デバッグ用キーボード参加変数
         let debugP1Ready = false;
         let debugP2Ready = false;
 
-        // BGM用のAudioオブジェクトfselectMode
-
-
-
-
-
-
-
-
-
-
-        // ここに音楽を指定してください。例: 'bgm.mp3' など
         const bgm = new Audio('assets/aitu.mp3');
-        const winSound = new Audio('assets/tappu.mp3');    // 勝利時のファンファーレなど
-        const pushSound = new Audio('assets/shot.mp3');    // 早押しをした瞬間の音
-        const btnSound = new Audio('assets/ok.mp3');   // メニュー画面などのボタン音
-
-
-
-
+        const winSound = new Audio('assets/tappu.mp3');    
+        const pushSound = new Audio('assets/shot.mp3');    
+        const btnSound = new Audio('assets/ok.mp3');   
 
         function playSound(audioObj) {
             try {
                 if (!audioObj) return;
-                audioObj.currentTime = 0; // 再生位置をリセットして連続タップに対応
+                audioObj.currentTime = 0; 
                 audioObj.play();
             } catch (e) {
                 console.error("音声再生エラー:", e);
             }
         }
-
-
-
-
-
 
         bgm.loop = true;
 
@@ -665,19 +647,25 @@
 
         // --- 1. モード選択と待機 ---
         function selectMode(mode) {
-
             gameMode = mode;
             // ユーザー操作きっかけでオーディオをアンロック
-            try { bgm.play().then(() => bgm.pause()); 
+            try { 
+                bgm.play().then(() => bgm.pause()); 
                 winSound.play().then(() => winSound.pause());
                 btnSound.play().then(() => btnSound.pause());
                 pushSound.play().then(() => pushSound.pause());
-            
             } catch(e) {}
                     
-            showScreen('screen-wait');
-            playSound(btnSound); 
-            startPolling();
+            playSound(btnSound);
+
+            if (mode === 'normal') {
+                // 通常モードはIDの認証・待機なしですぐ開始(カウントダウンへ)
+                gameData = null;
+                startGame();
+            } else {
+                showScreen('screen-wait');
+                startPolling();
+            }
         }
 
         function startPolling() {
@@ -691,7 +679,7 @@
 
                         if (data.status === 'playing') {
                             clearInterval(pollTimer);
-                            setTimeout(startGame, 1000); // UI更新を見せてから遷移
+                            setTimeout(startGame, 1000); 
                         }
                     }
                 } catch (error) {
@@ -708,9 +696,8 @@
             if (p2Occupied) document.getElementById('icon-p2').innerHTML = CHECK_MARK_SVG;
         }
 
-        // --- 手動入力での強制スタート ---
         function forceStart() {
-            playSound(btnSound); // ← 追加
+            playSound(btnSound); 
             if (pollTimer) {
                 clearInterval(pollTimer);
                 pollTimer = null;
@@ -719,7 +706,6 @@
             const p1Val = document.getElementById('manual-p1-id').value;
             const p2Val = document.getElementById('manual-p2-id').value;
 
-            // 入力がない場合はスキップ扱いにしてチップ送金を発生させない
             gameData = {
                 p1_id: p1Val ? Number(p1Val) : null,
                 p2_id: p2Val ? Number(p2Val) : null,
@@ -729,30 +715,20 @@
             };
 
             updateWaitUI(gameData);
-            setTimeout(startGame, 500); // チェックマークを見せてから開始
+            setTimeout(startGame, 500); 
         }
 
-
-        // --- キーボード操作（待機画面での参加 ＆ ゲーム中の早押し） ---
-// ----------------------------------------------------
-        // 新しく追加: キーの同時押しを判定するための変数
+        // キーの同時押しを判定するための変数
         const keysPressed = {};
 
-        // キーが押されたときの処理
         window.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
-            keysPressed[key] = true; // 押されたキーを記録
+            keysPressed[key] = true;
 
-            // --- 1. モード選択画面 ---
             if (document.getElementById('screen-mode').classList.contains('active')) {
-                if (key === 'a') {
-                    selectMode('normal');
-                } else if (key === 'l') {
-                    selectMode('casino');
-                }
+                if (key === 'a') selectMode('normal');
+                else if (key === 'l') selectMode('casino');
             }
-            
-            // --- 2. 待機画面中：AとLで強制準備完了 ---
             else if (document.getElementById('screen-wait').classList.contains('active')) {
                 let changed = false;
                 if (key === 'a' && !debugP1Ready) {
@@ -767,22 +743,16 @@
                 }
 
                 if (changed && debugP1Ready && debugP2Ready) {
-                    // 両方キーが押されたら少し待って自動で強制開始
                     setTimeout(forceStart, 500);
                 }
             }
-
-            // --- 3. ゲーム進行中：AとLで早押し反応 ---
             else if (gameState === 'ready' || gameState === 'go') {
                 if (key === 'a') handlePush(1);
                 if (key === 'l') handlePush(2);
             }
-
-            // --- 4. リザルト画面：AとLの同時押しでタイトルへ戻る ---
             else if (gameState === 'result' && document.getElementById('screen-result').classList.contains('active')) {
                 if (keysPressed['a'] && keysPressed['l']) {
                     const resetBtn = document.querySelector('.reset-btn');
-                    // ボタンがまだ無効化（処理中）でなければ実行
                     if (resetBtn && !resetBtn.disabled) {
                         resetToTitle(resetBtn);
                     }
@@ -790,34 +760,53 @@
             }
         });
 
-        // キーが離されたときの処理
         window.addEventListener('keyup', (e) => {
             const key = e.key.toLowerCase();
-            keysPressed[key] = false; // 離されたキーの記録を消す
+            keysPressed[key] = false; 
         });
-        // ----------------------------------------------------
 
-
-        // --- 2. ゲームプレイ開始 ---
+        // --- 2. ゲームプレイ開始 (カウントダウン追加) ---
         function startGame() {
             showScreen('screen-game');
-            gameState = 'ready';
+            gameState = 'countdown';
             p1Time = null;
             p2Time = null;
             debugP1Ready = false;
             debugP2Ready = false;
             
             const belt = document.getElementById('game-belt');
+            let count = 5;
+            belt.className = 'belt countdown';
+            belt.innerText = count;
+
+            const countDownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    belt.innerText = count;
+                } else {
+                    clearInterval(countDownInterval);
+                    startReadyPhase();
+                }
+            }, 1000);
+        }
+
+        // BGM開始と早押し待機フェーズ
+        function startReadyPhase() {
+            gameState = 'ready';
+            const belt = document.getElementById('game-belt');
             belt.className = 'belt';
             belt.innerText = '曲が止まったら押せ';
-            
-            try { bgm.play(); } catch(e) {} // BGM再生
+
+            try { 
+                bgm.currentTime = 0;
+                bgm.play(); 
+            } catch(e) {} 
 
             // 3秒〜7秒のランダムなタイミングで「GO」
             const waitTime = Math.random() * 4000 + 3000;
             goTimeoutId = setTimeout(() => {
                 gameState = 'go';
-                try { bgm.pause(); } catch(e) {} // 曲を止める
+                try { bgm.pause(); } catch(e) {} 
                 
                 belt.className = 'belt go';
                 belt.innerText = '押せ！！！';
@@ -827,13 +816,16 @@
 
         // スマホ画面タップ用
         function handlePush(playerNum) {
+            // カウントダウン中などの準備期間はタップ・キー入力を無視
+            if (gameState !== 'ready' && gameState !== 'go') return;
+
             playSound(pushSound);
             if (gameState === 'ready') {
                 // フライング
                 clearTimeout(goTimeoutId);
                 try { bgm.pause(); } catch(e) {}
                 
-                if (playerNum === 1) p1Time = -1; // -1 はフライングの印
+                if (playerNum === 1) p1Time = -1; 
                 if (playerNum === 2) p2Time = -1;
                 
                 processResult();
@@ -845,11 +837,9 @@
                 if (playerNum === 2 && p2Time === null) p2Time = timeStr;
 
                 if (p1Time !== null && p2Time !== null) {
-                    // 両方押した
                     if (endTimerId) clearTimeout(endTimerId);
                     processResult();
                 } else {
-                    // 片方だけ押した状態。もう片方に1秒だけ猶予を与える
                     if (!endTimerId) {
                         endTimerId = setTimeout(processResult, 1000);
                     }
@@ -857,7 +847,6 @@
             }
         }
 
-        // --- 紙吹雪を生成 ---
         function launchConfetti(themeColor) {
             const layer = document.getElementById('confetti-layer');
             layer.innerHTML = '';
@@ -891,7 +880,6 @@
             }
         }
 
-        // --- 数値のカウントアップ演出 ---
         function animateCountUp(elementId, targetSeconds) {
             const el = document.getElementById(elementId);
             const duration = 550;
@@ -915,12 +903,11 @@
         function processResult() {
             gameState = 'result';
             
-            let winner = 0; // 0: Draw, 1: P1, 2: P2
+            let winner = 0; 
             let p1Display = "";
             let p2Display = "";
             let p1IsNumber = false, p2IsNumber = false;
 
-            // タイム比較と勝敗判定
             if (p1Time === -1 && p2Time !== -1) {
                 winner = 2; p1Display = "フライング"; p2Display = (p2Time === null) ? "-" : p2Time.toFixed(3) + "s";
                 p2IsNumber = (p2Time !== null);
@@ -938,7 +925,6 @@
                 else winner = 0;
             }
 
-            // 背景テーマ・タイトルとカラーの設定
             const screenResult = document.getElementById('screen-result');
             const titleTop = document.getElementById('result-title-top');
             const titleBot = document.getElementById('result-title-bottom');
@@ -990,28 +976,19 @@
                 titleBot.className = "winner-subtitle color-draw";
             }
             screenResult.classList.add('theme-' + themeKey);
-            // ==========================================
-            // 【追加】結果に応じて効果音を再生する
-            // ==========================================
+
             try {
-                if (winner === 1 || winner === 2) {
-                    winSound.currentTime = 0; // 連続で鳴らせるように再生位置をリセット
-                    winSound.play();
-                } else {
-                    winSound.currentTime = 0;
-                    winSound.play();
-                }
+                winSound.currentTime = 0; 
+                winSound.play();
             } catch(e) {
                 console.error("効果音の再生エラー:", e);
             }
 
-            // タイム表示（数値の場合はカウントアップ演出、それ以外は即時表示）
             const timeP1El = document.getElementById('time-p1');
             const timeP2El = document.getElementById('time-p2');
             if (p1IsNumber) { animateCountUp('time-p1', p1Time); } else { timeP1El.innerText = p1Display; }
             if (p2IsNumber) { animateCountUp('time-p2', p2Time); } else { timeP2El.innerText = p2Display; }
 
-            // カジノモードのチップ計算
             const chipboxP1 = document.getElementById('chipbox-p1');
             const chipboxP2 = document.getElementById('chipbox-p2');
             if (gameMode === 'casino') {
@@ -1025,7 +1002,6 @@
                 setChipUI('chip-p1', 'chipicon-p1', p1Delta);
                 setChipUI('chip-p2', 'chipicon-p2', p2Delta);
 
-                // DBへ非同期でチップ送信 (gameDataのIDが存在する場合のみ実行)
                 if (winner !== 0) {
                     if (gameData && gameData.p1_id) sendChipDelta(gameData.p1_id, p1Delta);
                     if (gameData && gameData.p2_id) sendChipDelta(gameData.p2_id, p2Delta);
@@ -1035,9 +1011,7 @@
                 chipboxP2.style.display = 'none';
             }
 
-            // 紙吹雪演出（引き分け以外は派手に、引き分けは控えめに）
             launchConfetti(themeKey);
-
             showScreen('screen-result');
         }
 
@@ -1045,7 +1019,7 @@
             const el = document.getElementById(textId);
             const icon = document.getElementById(iconId);
             icon.classList.remove('spin');
-            void icon.offsetWidth; // reflow でアニメーションを再トリガー
+            void icon.offsetWidth; 
             icon.classList.add('spin');
 
             if (delta > 0) {
@@ -1074,18 +1048,21 @@
 
         // --- 4. DBのリセットとタイトルへの帰還 ---
         async function resetToTitle(btn) {
-            playSound(btnSound); // ← 追加
+            playSound(btnSound); 
             btn.disabled = true;
             btn.innerText = "リセット中...";
             
-            try {
-                await fetch(`${API_BASE_URL}/api/reset`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ game_id: 'HAYAOSHI' })
-                });
-            } catch (e) {
-                console.error("DBリセットエラー:", e);
+            // 通常モードの場合はAPIリセットを省略し、カジノモードのみDBへリセット要求を送る
+            if (gameMode === 'casino') {
+                try {
+                    await fetch(`${API_BASE_URL}/api/reset`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ game_id: 'HAYAOSHI' })
+                    });
+                } catch (e) {
+                    console.error("DBリセットエラー:", e);
+                }
             }
             
             location.reload(); 
