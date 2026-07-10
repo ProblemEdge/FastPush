@@ -623,6 +623,9 @@
         let debugP1Ready = false;
         let debugP2Ready = false;
 
+        // ↓追加：リザルト画面での「戻る承認」フラグ
+        let resultP1Approved = false;
+        let resultP2Approved = false;
         const bgm = new Audio('assets/aitu.mp3');
         const winSound = new Audio('assets/tappu.mp3');    
         const pushSound = new Audio('assets/shot.mp3');    
@@ -751,13 +754,16 @@
                 if (key === 'l') handlePush(2);
             }
             else if (gameState === 'result' && document.getElementById('screen-result').classList.contains('active')) {
-                if (keysPressed['a'] && keysPressed['l']) {
+                if (key === 'a') resultP1Approved = true;
+                if (key === 'l') resultP2Approved = true;
+
+                if (resultP1Approved && resultP2Approved) {
                     const resetBtn = document.querySelector('.reset-btn');
                     if (resetBtn && !resetBtn.disabled) {
                         resetToTitle(resetBtn);
                     }
                 }
-            }
+}
         });
 
         window.addEventListener('keyup', (e) => {
@@ -1012,6 +1018,8 @@
             }
 
             launchConfetti(themeKey);
+            resultP1Approved = false;   // ←追加
+            resultP2Approved = false;   // ←追加
             showScreen('screen-result');
         }
 
