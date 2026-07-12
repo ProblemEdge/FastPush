@@ -1565,35 +1565,11 @@
 
         function showChampionScreen() {
             gameState = 'finished';
-            const championName = document.getElementById('champion-name');
-            const championScore = document.getElementById('champion-score');
-            const championCrown = document.querySelector('.champion-crown');
-
-            championCrown.classList.remove('show');
-            void championCrown.offsetWidth;
-
-            if (p1Score > p2Score) {
-                championName.innerText = 'Player1が優勝！';
-                championName.className = 'champion-title p1';
-                championScore.innerText = `${p1Score} - ${p2Score}`;
-                championScore.className = 'final-score-display p1';
-            } else if (p2Score > p1Score) {
-                championName.innerText = 'Player2が優勝！';
-                championName.className = 'champion-title p2';
-                championScore.innerText = `${p2Score} - ${p1Score}`;
-                championScore.className = 'final-score-display p2';
-            } else {
-                championName.innerText = '同点！';
-                championName.className = 'champion-title p1';
-                championScore.innerText = `${p1Score} - ${p2Score}`;
-                championScore.className = 'final-score-display p1';
-            }
-
-            launchConfettiChampion();
             resultP1Approved = false;
             resultP2Approved = false;
 
-            // チップは試合の最終結果（3点先取）でのみ付与する
+            // チップは試合の最終結果（3点先取）でのみ付与する。
+            // 表示の確実性を最優先するため、まず計算だけ先に済ませる。
             if (p1Score > p2Score) {
                 p1TotalChip = 500;
                 p2TotalChip = -500;
@@ -1605,23 +1581,75 @@
                 p2TotalChip = 0;
             }
 
-            if (gameMode === 'casino') {
-                if (gameData && gameData.p1_id) sendChipDelta(gameData.p1_id, p1TotalChip);
-                if (gameData && gameData.p2_id) sendChipDelta(gameData.p2_id, p2TotalChip);
+            // 演出（クラウン・タイトル・紙吹雪）は失敗しても致命的ではないので保護する
+            try {
+                const championName = document.getElementById('champion-name');
+                const championScore = document.getElementById('champion-score');
+                const championCrown = document.querySelector('.champion-crown');
+
+                championCrown.classList.remove('show');
+                void championCrown.offsetWidth;
+
+                if (p1Score > p2Score) {
+                    championName.innerText = 'Player1が優勝！';
+                    championName.className = 'champion-title p1';
+                    championScore.innerText = `${p1Score} - ${p2Score}`;
+                    championScore.className = 'final-score-display p1';
+                } else if (p2Score > p1Score) {
+                    championName.innerText = 'Player2が優勝！';
+                    championName.className = 'champion-title p2';
+                    championScore.innerText = `${p2Score} - ${p1Score}`;
+                    championScore.className = 'final-score-display p2';
+                } else {
+                    championName.innerText = '同点！';
+                    championName.className = 'champion-title p1';
+                    championScore.innerText = `${p1Score} - ${p2Score}`;
+                    championScore.className = 'final-score-display p1';
+                }
+
+                launchConfettiChampion();
+            } catch (e) {
+                console.error("優勝演出の描画中にエラーが発生しましたが、チップ表示は継続します:", e);
             }
 
-            const chipInfo = document.getElementById('champion-chip-info');
+            // DBへの反映はベストエフォート。失敗してもチップ表示自体は止めない
             if (gameMode === 'casino') {
-                chipInfo.style.display = 'flex';
-                chipInfo.innerHTML = `
-                    <div class="champion-chip-row">
-                        ${buildChampionChipCard('Player1', 'chip-p1', 'red', p1Score, p1TotalChip)}
-                        ${buildChampionChipCard('Player2', 'chip-p2', 'blue', p2Score, p2TotalChip)}
-                    </div>
-                `;
-            } else {
-                chipInfo.style.display = 'none';
-                chipInfo.innerHTML = '';
+                try {
+                    if (gameData && gameData.p1_id) sendChipDelta(gameData.p1_id, p1TotalChip);
+                    if (gameData && gameData.p2_id) sendChipDelta(gameData.p2_id, p2TotalChip);
+                } catch (e) {
+                    console.error("チップのDB反映でエラーが発生しましたが、表示は継続します:", e);
+                }
+            }
+
+            // チップ表示は最優先事項。カード生成に失敗しても最低限のテキストで必ず表示する
+            try {
+                const chipInfo = document.getElementById('champion-chip-info');
+                if (gameMode === 'casino') {
+                    chipInfo.style.display = 'flex';
+                    chipInfo.innerHTML = `
+                        <div class="champion-chip-row">
+                            ${buildChampionChipCard('Player1', 'chip-p1', 'red', p1Score, p1TotalChip)}
+                            ${buildChampionChipCard('Player2', 'chip-p2', 'blue', p2Score, p2TotalChip)}
+                        </div>
+                    `;
+                } else {
+                    chipInfo.style.display = 'none';
+                    chipInfo.innerHTML = '';
+                }
+            } catch (e) {
+                console.error("チップ表示カードの生成に失敗したため、簡易表示にフォールバックします:", e);
+                try {
+                    const chipInfo = document.getElementById('champion-chip-info');
+                    if (chipInfo && gameMode === 'casino') {
+                        chipInfo.style.display = 'flex';
+                        chipInfo.innerText =
+                            `Player1: ${p1TotalChip >= 0 ? '+' : ''}${p1TotalChip} CHIP　` +
+                            `Player2: ${p2TotalChip >= 0 ? '+' : ''}${p2TotalChip} CHIP`;
+                    }
+                } catch (e2) {
+                    console.error("チップ表示の最終フォールバックにも失敗しました:", e2);
+                }
             }
 
             showScreen('screen-champion');
