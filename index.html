@@ -574,7 +574,7 @@
                             <circle cx="12" cy="12" r="10" fill="#f1c40f" stroke="#d4a90c" stroke-width="1.5"/>
                             <circle cx="12" cy="12" r="6.5" fill="none" stroke="#d4a90c" stroke-width="1"/>
                         </svg>
-                        <div id="chip-p1" class="chip-text">+100 チップ</div>
+                        <div id="chip-p1" class="chip-text">+500 チップ</div>
                     </div>
                 </div>
 
@@ -590,7 +590,7 @@
                             <circle cx="12" cy="12" r="10" fill="#f1c40f" stroke="#d4a90c" stroke-width="1.5"/>
                             <circle cx="12" cy="12" r="6.5" fill="none" stroke="#d4a90c" stroke-width="1"/>
                         </svg>
-                        <div id="chip-p2" class="chip-text">-100 チップ</div>
+                        <div id="chip-p2" class="chip-text">-500 チップ</div>
                     </div>
                 </div>
             </div>
@@ -1002,8 +1002,8 @@
                 chipboxP2.style.display = 'flex';
                 let p1Delta = 0, p2Delta = 0;
                 
-                if (winner === 1) { p1Delta = 100; p2Delta = -100; }
-                else if (winner === 2) { p1Delta = -100; p2Delta = 100; }
+                if (winner === 1) { p1Delta = 500; p2Delta = -500; }
+                else if (winner === 2) { p1Delta = -500; p2Delta = 500; }
 
                 setChipUI('chip-p1', 'chipicon-p1', p1Delta);
                 setChipUI('chip-p2', 'chipicon-p2', p2Delta);
