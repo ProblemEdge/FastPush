@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>早押しバトルアリーナDX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
     <style>
         /* 全体設定 */
         body {
@@ -157,6 +160,7 @@
             background-size: cover;
             background-position: center;
             justify-content: center;
+            position: relative;
         }
 
         .belt {
@@ -196,8 +200,204 @@
         .left-area { left: 0; }
         .right-area { right: 0; }
 
+        /* --- スコアボード（画面上部） --- */
+        .scoreboard {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 30;
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 40px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 16px 40px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+        }
+
+        .scoreboard.show {
+            display: flex;
+        }
+
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border-radius: 12px;
+            transition: all 0.4s ease;
+        }
+
+        .score-name {
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .score-name.p1-color { color: #e74c3c; }
+        .score-name.p2-color { color: #3498db; }
+
+        .score-value {
+            font-size: 2.4rem;
+            font-weight: 900;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        .score-value.p1-color { color: #ff8a7a; }
+        .score-value.p2-color { color: #7fc4ec; }
+
+        .score-item.champion {
+            padding: 12px 20px;
+            border-radius: 12px;
+            background: rgba(241, 196, 15, 0.15);
+            border: 2px solid rgba(241, 196, 15, 0.4);
+            animation: championPulse 0.8s ease-in-out infinite;
+        }
+
+        @keyframes championPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); box-shadow: 0 0 20px rgba(241, 196, 15, 0.5); }
+        }
+
+        .score-item.champion::before {
+            content: '👑';
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+            display: block;
+            animation: crownBounce 0.6s ease-in-out infinite;
+        }
+
+        @keyframes crownBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .score-separator {
+            font-size: 1.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: bold;
+        }
+
+        /* --- スコアドット表示 --- */
+        .score-dots {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .score-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #555;
+        }
+
+        .score-dot.active {
+            background: #2ecc71;
+            box-shadow: 0 0 12px #2ecc71;
+        }
+
+        .score-dot.red {
+            background: #e74c3c;
+            box-shadow: 0 0 12px #e74c3c;
+        }
+
+        .score-dot.blue {
+            background: #3498db;
+            box-shadow: 0 0 12px #3498db;
+        }
+
+        /* --- ラウンド結果オーバーレイ --- */
+        .round-result-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            gap: 30px;
+        }
+
+        .round-result-overlay.show {
+            display: flex;
+        }
+
+        .round-result-text {
+            font-size: 2.5rem;
+            font-weight: 900;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .round-result-text.p1-win { color: #ff8a7a; }
+        .round-result-text.p2-win { color: #7fc4ec; }
+        .round-result-text.draw { color: #f1c40f; }
+
+        .round-chip-display {
+            display: flex;
+            gap: 60px;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        .chip-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 24px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chip-info.winner {
+            color: #2ecc71;
+            text-shadow: 0 0 15px rgba(46, 204, 113, 0.6);
+            font-size: 1.6rem;
+            background: rgba(46, 204, 113, 0.1);
+            border: 2px solid rgba(46, 204, 113, 0.3);
+        }
+
+        .chip-info.loser {
+            color: #ff6b5b;
+            opacity: 0.7;
+            background: rgba(255, 107, 91, 0.08);
+        }
+
+        .chip-amount {
+            font-size: 2.8rem;
+            font-weight: 900;
+        }
+
+        .next-round-btn {
+            padding: 16px 50px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .next-round-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+        }
+
+        .next-round-btn:active { transform: scale(0.96); }
+
         /* ==================================================== */
-        /* --- 4. リザルト画面（勝利演出） ------------------------ */
+        /* --- 4. リザルト画面（勝利演出） --- */
         /* ==================================================== */
 
         #screen-result {
@@ -415,16 +615,37 @@
         }
 
         .time-text {
+            font-family: 'Orbitron', 'Helvetica Neue', sans-serif;
             font-size: clamp(2.2rem, 5.5vw, 3.6rem);
             font-weight: 900;
-            color: #fff;
+            letter-spacing: 1px;
             line-height: 1.1;
             font-variant-numeric: tabular-nums;
+            color: #fff;
+            background: linear-gradient(180deg, #ffffff 10%, #d7e2f0 50%, #93a8c2 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 22px rgba(255, 255, 255, 0.35);
+        }
+        .player-card.is-winner .time-text {
+            background: linear-gradient(180deg, #ffffff 5%, currentColor 130%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+        }
+        .player-card.is-loser .time-text {
+            background: none;
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.45);
+            color: rgba(255, 255, 255, 0.45);
+            text-shadow: none;
         }
         .time-label {
             margin-top: 6px;
             font-size: clamp(0.85rem, 1.6vw, 1.1rem);
             font-weight: bold;
+            letter-spacing: 2px;
             color: rgba(255,255,255,0.6);
             text-align: center;
         }
@@ -449,11 +670,18 @@
             100% { transform: rotateY(1080deg); }
         }
         .chip-text {
-            font-size: clamp(1.3rem, 2.6vw, 1.8rem);
             font-weight: 900;
         }
-        .chip-text.chip-plus  { color: #2ecc71; text-shadow: 0 0 12px rgba(46,204,113,0.6); }
-        .chip-text.chip-minus { color: #ff6b5b; }
+        .chip-text.chip-plus  { 
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            color: #2ecc71; 
+            text-shadow: 0 0 12px rgba(46,204,113,0.6);
+        }
+        .chip-text.chip-minus { 
+            font-size: clamp(1rem, 1.8vw, 1.3rem);
+            color: #ff6b5b;
+            opacity: 0.7;
+        }
         .chip-text.chip-zero  { color: #ecf0f1; }
 
         /* 戻るボタン */
@@ -476,6 +704,184 @@
         .reset-btn:active { transform: scale(0.96); }
         .reset-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* --- 最終結果画面（チャンピオン表示） --- */
+        #screen-champion {
+            justify-content: center;
+            gap: 30px;
+            background: #0a0908;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .champion-light-rays {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 220vmax;
+            height: 220vmax;
+            transform: translate(-50%, -50%);
+            background: repeating-conic-gradient(
+                rgba(241, 196, 15, 0.1) 0deg 6deg,
+                transparent 6deg 16deg
+            );
+            animation: rotateRays 30s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.5;
+        }
+
+        .champion-confetti-layer {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .champion-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .champion-crown {
+            width: clamp(80px, 12vw, 140px);
+            height: clamp(80px, 12vw, 140px);
+            opacity: 0;
+            animation: crownDrop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+        }
+
+        @keyframes crownDrop {
+            0% { opacity: 0; transform: translateY(-60px) scale(0.6) rotate(-15deg); }
+            100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+        }
+
+        .champion-title {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-align: center;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.35s forwards;
+        }
+
+        .champion-title.p1 {
+            color: #ff6b5b;
+            text-shadow: 0 0 30px rgba(231, 76, 60, 0.8), 2px 2px 0 #000;
+        }
+
+        .champion-title.p2 {
+            color: #5dade2;
+            text-shadow: 0 0 30px rgba(52, 152, 219, 0.8), 2px 2px 0 #000;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .final-score-display {
+            font-size: 2.2rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-top: 20px;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.5s forwards;
+        }
+
+        .final-score-display.p1 { color: #ff8a7a; }
+        .final-score-display.p2 { color: #7fc4ec; }
+
+        #champion-chip-info {
+            margin-top: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out 0.6s forwards;
+        }
+
+        .champion-chip-row {
+            display: flex;
+            gap: clamp(1rem, 3vw, 2.5rem);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .champion-chip-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            min-width: 180px;
+            padding: clamp(1rem, 2vw, 1.4rem) clamp(1.4rem, 3vw, 2.2rem);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(6px);
+        }
+
+        .champion-chip-card.chip-p1 { border-color: rgba(231, 76, 60, 0.45); box-shadow: 0 0 20px rgba(231, 76, 60, 0.15); }
+        .champion-chip-card.chip-p2 { border-color: rgba(52, 152, 219, 0.45); box-shadow: 0 0 20px rgba(52, 152, 219, 0.15); }
+
+        .champion-chip-name {
+            font-weight: 900;
+            letter-spacing: 2px;
+            font-size: clamp(1rem, 2vw, 1.3rem);
+        }
+        .champion-chip-name.chip-p1 { color: #ff8a7a; }
+        .champion-chip-name.chip-p2 { color: #7fc4ec; }
+
+        .champion-chip-amount {
+            font-family: 'Orbitron', 'Helvetica Neue', sans-serif;
+            font-weight: 900;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            letter-spacing: 1px;
+        }
+        .champion-chip-amount.plus {
+            color: #2ecc71;
+            text-shadow: 0 0 16px rgba(46, 204, 113, 0.7), 0 0 32px rgba(46, 204, 113, 0.35);
+        }
+        .champion-chip-amount.minus {
+            color: #ff6b5b;
+            text-shadow: 0 0 12px rgba(255, 107, 91, 0.5);
+        }
+        .champion-chip-amount.zero {
+            color: #ecf0f1;
+            opacity: 0.8;
+        }
+        .champion-chip-label {
+            margin-top: -4px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: rgba(255, 255, 255, 0.45);
+        }
+
+        .champion-reset-btn {
+            margin-top: 30px;
+            padding: 16px 50px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .champion-reset-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+        }
+
+        .champion-reset-btn:active { transform: scale(0.96); }
+        .champion-reset-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     </style>
 </head>
 <body>
@@ -483,9 +889,17 @@
 <!-- SCREEN 1: モード選択 -->
     <div id="screen-mode" class="screen active">
         <div class="arena-title">早押しバトルアリーナDX</div>
+        <div style="margin-top: 2vh; font-size: 1.2rem; color: #aaa; text-align: center;">
+            先に3ポイント獲得したプレイヤーが優勝します
+        </div>
         <div class="mode-btn-container">
             <button class="btn-box btn-green" onclick="selectMode('normal')">通常モード<br><span style="font-size: 0.6em;">(左のボタン)</span></button>
             <button class="btn-box btn-red" onclick="selectMode('casino')">カジノモード<br><span style="font-size: 0.6em;">(右のボタン)</span></button>
+        </div>
+        <div style="margin-top: 4vh; padding: 15px 30px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; text-align: center; max-width: 500px; font-size: 1rem; color: #ccc; line-height: 1.6;">
+            <div style="font-weight: bold; margin-bottom: 10px; color: #f1c40f;">操作方法</div>
+            各ラウンド・リザルト画面：<b>Aキー + Lキー同時押し</b> で進行<br>
+            早押し画面：<b>Aキー（左）/ Lキー（右）</b> で反応
         </div>
     </div>
 
@@ -497,7 +911,6 @@
         <div class="player-status-container">
             <div class="player-status">
                 <div id="icon-p1" class="icon-wait">
-                    <!-- 初期：青い点々 -->
                     <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none">
                         <circle cx="5" cy="12" r="3" fill="#3498db"/>
                         <circle cx="12" cy="12" r="3" fill="#3498db"/>
@@ -508,7 +921,6 @@
             </div>
             <div class="player-status">
                 <div id="icon-p2" class="icon-wait">
-                    <!-- 初期：青い点々 -->
                     <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none">
                         <circle cx="5" cy="12" r="3" fill="#3498db"/>
                         <circle cx="12" cy="12" r="3" fill="#3498db"/>
@@ -537,6 +949,31 @@
 
     <!-- SCREEN 3: ゲームプレイ画面 -->
     <div id="screen-game" class="screen">
+        <!-- スコアボード -->
+        <div class="scoreboard" id="scoreboard">
+            <div class="score-item">
+                <div class="score-name p1-color">Player1</div>
+                <div id="dots-p1" class="score-dots"></div>
+                <div id="score-p1" class="score-value p1-color">0</div>
+            </div>
+            <div class="score-separator">−</div>
+            <div class="score-item">
+                <div class="score-name p2-color">Player2</div>
+                <div id="dots-p2" class="score-dots"></div>
+                <div id="score-p2" class="score-value p2-color">0</div>
+            </div>
+        </div>
+
+        <!-- ラウンド結果オーバーレイ -->
+        <div id="round-result-overlay" class="round-result-overlay">
+            <div id="round-result-text" class="round-result-text"></div>
+            <div id="round-chip-display" class="round-chip-display" style="display: none;">
+            </div>
+            <div style="text-align: center; color: rgba(255,255,255,0.7); font-size: 1rem; margin-top: 10px;">
+                Aキー + Lキーを同時押しで次のラウンドへ
+            </div>
+        </div>
+
         <!-- 画面の左右タップで反応 -->
         <div class="push-area left-area" onmousedown="handlePush(1)" ontouchstart="handlePush(1)"></div>
         <div class="push-area right-area" onmousedown="handlePush(2)" ontouchstart="handlePush(2)"></div>
@@ -546,7 +983,7 @@
         </div>
     </div>
 
-    <!-- SCREEN 4: リザルト画面 -->
+    <!-- SCREEN 4: ラウンド結果画面 -->
     <div id="screen-result" class="screen">
         <div class="light-rays"></div>
         <div class="confetti-layer" id="confetti-layer"></div>
@@ -561,7 +998,7 @@
                 <rect x="24" y="50" width="16" height="6" rx="2" fill="#d4a90c" opacity="0.5"/>
             </svg>
 
-            <div id="result-title-top" class="winner-banner">Player1の勝利</div>
+            <div id="result-title-top" class="winner-banner">🎯 Player1の勝利</div>
 
             <div class="players-row">
                 <div id="card-p1" class="player-card color-p1">
@@ -597,7 +1034,32 @@
 
             <div id="result-title-bottom" class="winner-subtitle">GREAT REACTION</div>
 
-            <button class="reset-btn" onclick="resetToTitle(this)">タイトルへ戻る<br><span style="font-size: 0.7em;">(ボタンを同時押し)</span></button>
+            <div style="margin-top: 4vh; text-align: center; color: rgba(255,255,255,0.6); font-size: 0.95rem;">
+                Aキー + Lキーを同時押しで次へ
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 5: 最終結果画面（チャンピオン） -->
+    <div id="screen-champion" class="screen">
+        <div class="champion-light-rays"></div>
+        <div class="champion-confetti-layer" id="champion-confetti-layer"></div>
+
+        <div class="champion-content">
+            <svg class="champion-crown" viewBox="0 0 64 64" fill="none">
+                <path d="M18 10H46V26C46 34.8366 39.0589 42 30.5 42H33.5C24.9411 42 18 34.8366 18 26V10Z" fill="#f1c40f" stroke="#d4a90c" stroke-width="2"/>
+                <path d="M18 14H9C9 22 13 27 18 28" stroke="#f1c40f" stroke-width="3" stroke-linecap="round"/>
+                <path d="M46 14H55C55 22 51 27 46 28" stroke="#f1c40f" stroke-width="3" stroke-linecap="round"/>
+                <rect x="28" y="41" width="8" height="9" fill="#f1c40f"/>
+                <rect x="20" y="50" width="24" height="6" rx="2" fill="#f1c40f"/>
+                <rect x="24" y="50" width="16" height="6" rx="2" fill="#d4a90c" opacity="0.5"/>
+            </svg>
+
+            <div id="champion-name" class="champion-title p1">Player1が優勝！</div>
+            <div id="champion-score" class="final-score-display p1">3 - 2</div>
+            <div id="champion-chip-info"></div>
+
+            <button class="champion-reset-btn" onclick="resetToTitle(this)">タイトルへ戻る<br><span style="font-size: 0.7em;">(Aキー + Lキーを同時押し)</span></button>
         </div>
     </div>
 
@@ -608,12 +1070,22 @@
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>`;
         
+        const MAX_POINTS = 3; // 3点先取制
+        
         let gameMode = 'normal'; // 'normal' | 'casino'
         let pollTimer = null;
         let gameData = null;
 
+        // スコア管理
+        let p1Score = 0;
+        let p2Score = 0;
+
+        // チップ累計管理
+        let p1TotalChip = 0;
+        let p2TotalChip = 0;
+
         // ゲーム進行用変数
-        let gameState = 'init';  // 'init' | 'countdown' | 'ready' | 'go' | 'result'
+        let gameState = 'init';  // 'init' | 'countdown' | 'ready' | 'go' | 'result' | 'finished'
         let startTime = 0;
         let p1Time = null;
         let p2Time = null;
@@ -622,10 +1094,9 @@
         
         let debugP1Ready = false;
         let debugP2Ready = false;
-
-        // ↓追加：リザルト画面での「戻る承認」フラグ
         let resultP1Approved = false;
         let resultP2Approved = false;
+
         const bgm = new Audio('assets/aitu.mp3');
         const winSound = new Audio('assets/tappu.mp3');    
         const pushSound = new Audio('assets/shot.mp3');    
@@ -651,7 +1122,6 @@
         // --- 1. モード選択と待機 ---
         function selectMode(mode) {
             gameMode = mode;
-            // ユーザー操作きっかけでオーディオをアンロック
             try { 
                 bgm.play().then(() => bgm.pause()); 
                 winSound.play().then(() => winSound.pause());
@@ -662,9 +1132,8 @@
             playSound(btnSound);
 
             if (mode === 'normal') {
-                // 通常モードはIDの認証・待機なしですぐ開始(カウントダウンへ)
                 gameData = null;
-                startGame();
+                startMatchSequence();
             } else {
                 showScreen('screen-wait');
                 startPolling();
@@ -682,7 +1151,7 @@
 
                         if (data.status === 'playing') {
                             clearInterval(pollTimer);
-                            setTimeout(startGame, 1000); 
+                            setTimeout(startMatchSequence, 1000); 
                         }
                     }
                 } catch (error) {
@@ -718,7 +1187,7 @@
             };
 
             updateWaitUI(gameData);
-            setTimeout(startGame, 500); 
+            setTimeout(startMatchSequence, 500); 
         }
 
         // キーの同時押しを判定するための変数
@@ -758,12 +1227,25 @@
                 if (key === 'l') resultP2Approved = true;
 
                 if (resultP1Approved && resultP2Approved) {
-                    const resetBtn = document.querySelector('.reset-btn');
+                    // マッチが終わったか確認
+                    if (p1Score >= MAX_POINTS || p2Score >= MAX_POINTS) {
+                        showChampionScreen();
+                    } else {
+                        nextRound();
+                    }
+                }
+            }
+            else if (gameState === 'finished' && document.getElementById('screen-champion').classList.contains('active')) {
+                if (key === 'a') resultP1Approved = true;
+                if (key === 'l') resultP2Approved = true;
+
+                if (resultP1Approved && resultP2Approved) {
+                    const resetBtn = document.querySelector('.champion-reset-btn');
                     if (resetBtn && !resetBtn.disabled) {
                         resetToTitle(resetBtn);
                     }
                 }
-}
+            }
         });
 
         window.addEventListener('keyup', (e) => {
@@ -771,17 +1253,30 @@
             keysPressed[key] = false; 
         });
 
-        // --- 2. ゲームプレイ開始 (カウントダウン追加) ---
-        function startGame() {
+        // マッチ開始（スコアボード表示）
+        function startMatchSequence() {
+            p1Score = 0;
+            p2Score = 0;
+            p1TotalChip = 0;
+            p2TotalChip = 0;
+            updateScoreBoard();
+            document.getElementById('scoreboard').classList.add('show');
+            startNewRound();
+        }
+
+        // 新しいラウンドを開始
+        function startNewRound() {
             showScreen('screen-game');
             gameState = 'countdown';
             p1Time = null;
             p2Time = null;
             debugP1Ready = false;
             debugP2Ready = false;
+            resultP1Approved = false;
+            resultP2Approved = false;
             
             const belt = document.getElementById('game-belt');
-            let count = 5;
+            let count = 3;
             belt.className = 'belt countdown';
             belt.innerText = count;
 
@@ -822,7 +1317,6 @@
 
         // スマホ画面タップ用
         function handlePush(playerNum) {
-            // カウントダウン中などの準備期間はタップ・キー入力を無視
             if (gameState !== 'ready' && gameState !== 'go') return;
 
             playSound(pushSound);
@@ -834,7 +1328,7 @@
                 if (playerNum === 1) p1Time = -1; 
                 if (playerNum === 2) p2Time = -1;
                 
-                processResult();
+                processRoundResult();
 
             } else if (gameState === 'go') {
                 // 正常な押し
@@ -844,10 +1338,10 @@
 
                 if (p1Time !== null && p2Time !== null) {
                     if (endTimerId) clearTimeout(endTimerId);
-                    processResult();
+                    processRoundResult();
                 } else {
                     if (!endTimerId) {
-                        endTimerId = setTimeout(processResult, 1000);
+                        endTimerId = setTimeout(processRoundResult, 1000);
                     }
                 }
             }
@@ -905,8 +1399,8 @@
             requestAnimationFrame(tick);
         }
 
-        // --- 3. 勝敗と結果表示 ---
-        function processResult() {
+        // --- ラウンド結果処理 ---
+        function processRoundResult() {
             gameState = 'result';
             
             let winner = 0; 
@@ -964,6 +1458,7 @@
                 cardP2.classList.add('is-loser');
                 ribbonP1.classList.add('show');
                 trophy.classList.add('show');
+                p1Score++;
             } else if (winner === 2) {
                 themeKey = 'p2';
                 titleTop.innerText = "Player2の勝利";
@@ -974,6 +1469,7 @@
                 cardP1.classList.add('is-loser');
                 ribbonP2.classList.add('show');
                 trophy.classList.add('show');
+                p2Score++;
             } else {
                 themeKey = 'draw';
                 titleTop.innerText = "引き分け";
@@ -995,32 +1491,174 @@
             if (p1IsNumber) { animateCountUp('time-p1', p1Time); } else { timeP1El.innerText = p1Display; }
             if (p2IsNumber) { animateCountUp('time-p2', p2Time); } else { timeP2El.innerText = p2Display; }
 
+            // チップはラウンド毎には付与しない（最終決着時のみ付与）ため、
+            // ラウンド結果画面ではチップ表示は常に非表示にする
             const chipboxP1 = document.getElementById('chipbox-p1');
             const chipboxP2 = document.getElementById('chipbox-p2');
-            if (gameMode === 'casino') {
-                chipboxP1.style.display = 'flex';
-                chipboxP2.style.display = 'flex';
-                let p1Delta = 0, p2Delta = 0;
-                
-                if (winner === 1) { p1Delta = 500; p2Delta = -500; }
-                else if (winner === 2) { p1Delta = -500; p2Delta = 500; }
-
-                setChipUI('chip-p1', 'chipicon-p1', p1Delta);
-                setChipUI('chip-p2', 'chipicon-p2', p2Delta);
-
-                if (winner !== 0) {
-                    if (gameData && gameData.p1_id) sendChipDelta(gameData.p1_id, p1Delta);
-                    if (gameData && gameData.p2_id) sendChipDelta(gameData.p2_id, p2Delta);
-                }
-            } else {
-                chipboxP1.style.display = 'none';
-                chipboxP2.style.display = 'none';
-            }
+            chipboxP1.style.display = 'none';
+            chipboxP2.style.display = 'none';
 
             launchConfetti(themeKey);
-            resultP1Approved = false;   // ←追加
-            resultP2Approved = false;   // ←追加
+            updateScoreBoard();
+            resultP1Approved = false;
+            resultP2Approved = false;
+
+            // ラウンド結果オーバーレイのチップ表示も同様に非表示（最終結果画面でのみ表示）
+            const overlay = document.getElementById('round-result-overlay');
+            document.getElementById('round-chip-display').style.display = 'none';
+            overlay.classList.remove('show');
+            
             showScreen('screen-result');
+            
+            // ※ A+L同時押しでの遷移処理に統合（keydownイベントで処理）
+        }
+
+        function drawDots(id, score, color) {
+            const el = document.getElementById(id);
+            let html = "";
+            for (let i = 0; i < MAX_POINTS; i++) {
+                html += `<div class="score-dot ${i < score ? `active ${color}` : ""}"></div>`;
+            }
+            el.innerHTML = html;
+        }
+
+        function updateScoreBoard() {
+            const scoreP1El = document.getElementById('score-p1');
+            const scoreP2El = document.getElementById('score-p2');
+            const scoreItem1 = scoreP1El.parentElement;
+            const scoreItem2 = scoreP2El.parentElement;
+            
+            scoreP1El.innerText = p1Score;
+            scoreP2El.innerText = p2Score;
+            
+            // 3ポイント達成者をハイライト
+            if (p1Score >= MAX_POINTS) {
+                scoreItem1.classList.add('champion');
+            } else {
+                scoreItem1.classList.remove('champion');
+            }
+            
+            if (p2Score >= MAX_POINTS) {
+                scoreItem2.classList.add('champion');
+            } else {
+                scoreItem2.classList.remove('champion');
+            }
+
+            drawDots("dots-p1", p1Score, "red");
+            drawDots("dots-p2", p2Score, "blue");
+        }
+
+        function nextRound() {
+            playSound(btnSound);
+            startNewRound();
+        }
+
+        function showChampionScreen() {
+            gameState = 'finished';
+            const championName = document.getElementById('champion-name');
+            const championScore = document.getElementById('champion-score');
+            const championCrown = document.querySelector('.champion-crown');
+
+            championCrown.classList.remove('show');
+            void championCrown.offsetWidth;
+
+            if (p1Score > p2Score) {
+                championName.innerText = 'Player1が優勝！';
+                championName.className = 'champion-title p1';
+                championScore.innerText = `${p1Score} - ${p2Score}`;
+                championScore.className = 'final-score-display p1';
+            } else if (p2Score > p1Score) {
+                championName.innerText = 'Player2が優勝！';
+                championName.className = 'champion-title p2';
+                championScore.innerText = `${p2Score} - ${p1Score}`;
+                championScore.className = 'final-score-display p2';
+            } else {
+                championName.innerText = '同点！';
+                championName.className = 'champion-title p1';
+                championScore.innerText = `${p1Score} - ${p2Score}`;
+                championScore.className = 'final-score-display p1';
+            }
+
+            launchConfettiChampion();
+            resultP1Approved = false;
+            resultP2Approved = false;
+
+            // チップは試合の最終結果（3点先取）でのみ付与する
+            if (p1Score > p2Score) {
+                p1TotalChip = 500;
+                p2TotalChip = -500;
+            } else if (p2Score > p1Score) {
+                p1TotalChip = -500;
+                p2TotalChip = 500;
+            } else {
+                p1TotalChip = 0;
+                p2TotalChip = 0;
+            }
+
+            if (gameMode === 'casino') {
+                if (gameData && gameData.p1_id) sendChipDelta(gameData.p1_id, p1TotalChip);
+                if (gameData && gameData.p2_id) sendChipDelta(gameData.p2_id, p2TotalChip);
+            }
+
+            const chipInfo = document.getElementById('champion-chip-info');
+            if (gameMode === 'casino') {
+                chipInfo.style.display = 'flex';
+                chipInfo.innerHTML = `
+                    <div class="champion-chip-row">
+                        ${buildChampionChipCard('Player1', 'chip-p1', 'red', p1Score, p1TotalChip)}
+                        ${buildChampionChipCard('Player2', 'chip-p2', 'blue', p2Score, p2TotalChip)}
+                    </div>
+                `;
+            } else {
+                chipInfo.style.display = 'none';
+                chipInfo.innerHTML = '';
+            }
+
+            showScreen('screen-champion');
+        }
+
+        function buildChampionChipCard(name, colorClass, dotColor, score, chip) {
+            let dots = '';
+            for (let i = 0; i < MAX_POINTS; i++) {
+                dots += `<div class="score-dot ${i < score ? `active ${dotColor}` : ""}"></div>`;
+            }
+            const chipClass = chip > 0 ? 'plus' : (chip < 0 ? 'minus' : 'zero');
+            return `
+                <div class="champion-chip-card ${colorClass}">
+                    <div class="champion-chip-name ${colorClass}">${name}</div>
+                    <div class="score-dots">${dots}</div>
+                    <div class="champion-chip-amount ${chipClass}">${chip >= 0 ? '+' : ''}${chip}</div>
+                    <div class="champion-chip-label">CHIP</div>
+                </div>
+            `;
+        }
+
+        function launchConfettiChampion() {
+            const layer = document.getElementById('champion-confetti-layer');
+            layer.innerHTML = '';
+
+            const colors = ['#f1c40f', '#f7dc6f', '#ffffff', '#bdc3c7', '#ff8a7a', '#7fc4ec'];
+            const pieceCount = 100;
+
+            for (let i = 0; i < pieceCount; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                const left = Math.random() * 100;
+                const duration = 3 + Math.random() * 2;
+                const delay = Math.random() * 0.8;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const isCircle = Math.random() > 0.5;
+
+                piece.style.left = left + 'vw';
+                piece.style.background = color;
+                piece.style.borderRadius = isCircle ? '50%' : '2px';
+                piece.style.animationDuration = duration + 's';
+                piece.style.animationDelay = delay + 's';
+                piece.style.width = (6 + Math.random() * 8) + 'px';
+                piece.style.height = (isCircle ? piece.style.width : (10 + Math.random() * 10) + 'px');
+
+                layer.appendChild(piece);
+            }
         }
 
         function setChipUI(textId, iconId, delta) {
@@ -1054,13 +1692,11 @@
             }
         }
 
-        // --- 4. DBのリセットとタイトルへの帰還 ---
         async function resetToTitle(btn) {
             playSound(btnSound); 
             btn.disabled = true;
             btn.innerText = "リセット中...";
             
-            // 通常モードの場合はAPIリセットを省略し、カジノモードのみDBへリセット要求を送る
             if (gameMode === 'casino') {
                 try {
                     await fetch(`${API_BASE_URL}/api/reset`, {
