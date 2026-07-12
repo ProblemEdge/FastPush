@@ -405,24 +405,24 @@
             padding: 4vh 0;
             position: relative;
             overflow: hidden;
-            background: #100f14;
+            background: #1c1a22;
             transition: background 0.6s ease;
         }
 
         #screen-result.theme-p1 {
             background:
-                radial-gradient(circle at 50% 22%, rgba(231, 76, 60, 0.38), transparent 55%),
-                #100f14;
+                radial-gradient(circle at 50% 22%, rgba(231, 76, 60, 0.45), transparent 60%),
+                #1c1a22;
         }
         #screen-result.theme-p2 {
             background:
-                radial-gradient(circle at 50% 22%, rgba(52, 152, 219, 0.38), transparent 55%),
-                #100f14;
+                radial-gradient(circle at 50% 22%, rgba(52, 152, 219, 0.45), transparent 60%),
+                #1c1a22;
         }
         #screen-result.theme-draw {
             background:
-                radial-gradient(circle at 50% 22%, rgba(241, 196, 15, 0.28), transparent 55%),
-                #100f14;
+                radial-gradient(circle at 50% 22%, rgba(241, 196, 15, 0.4), transparent 60%),
+                #1c1a22;
         }
 
         /* 回転するスポットライト光線 */
@@ -1256,6 +1256,7 @@
         // 新しいラウンドを開始
         function startNewRound() {
             if (resultAdvanceTimerId) { clearTimeout(resultAdvanceTimerId); resultAdvanceTimerId = null; }
+            if (endTimerId) { clearTimeout(endTimerId); endTimerId = null; }
             showScreen('screen-game');
             gameState = 'countdown';
             p1Time = null;
@@ -1392,7 +1393,28 @@
         // --- ラウンド結果処理 ---
         function processRoundResult() {
             gameState = 'result';
-            
+
+            try {
+                _renderRoundResult();
+            } catch (e) {
+                console.error("リザルト描画中にエラーが発生しました:", e);
+            } finally {
+                showScreen('screen-result');
+
+                // 一定時間後、自動で次のラウンド（または優勝画面）へ進む
+                if (resultAdvanceTimerId) clearTimeout(resultAdvanceTimerId);
+                resultAdvanceTimerId = setTimeout(() => {
+                    resultAdvanceTimerId = null;
+                    if (p1Score >= MAX_POINTS || p2Score >= MAX_POINTS) {
+                        showChampionScreen();
+                    } else {
+                        nextRound();
+                    }
+                }, RESULT_DISPLAY_MS);
+            }
+        }
+
+        function _renderRoundResult() {
             let winner = 0; 
             let p1Display = "";
             let p2Display = "";
@@ -1430,6 +1452,8 @@
             ribbonP1.classList.remove('show');
             ribbonP2.classList.remove('show');
             trophy.classList.remove('show');
+            // クラスの再付与でアニメーションを確実に再生させるため強制リフロー
+            void screenResult.offsetWidth;
 
             let themeKey = 'draw';
             const catchphrases = {
@@ -1497,19 +1521,6 @@
             const overlay = document.getElementById('round-result-overlay');
             document.getElementById('round-chip-display').style.display = 'none';
             overlay.classList.remove('show');
-            
-            showScreen('screen-result');
-
-            // 一定時間後、自動で次のラウンド（または優勝画面）へ進む
-            if (resultAdvanceTimerId) clearTimeout(resultAdvanceTimerId);
-            resultAdvanceTimerId = setTimeout(() => {
-                resultAdvanceTimerId = null;
-                if (p1Score >= MAX_POINTS || p2Score >= MAX_POINTS) {
-                    showChampionScreen();
-                } else {
-                    nextRound();
-                }
-            }, RESULT_DISPLAY_MS);
         }
 
         function drawDots(id, score, color) {
