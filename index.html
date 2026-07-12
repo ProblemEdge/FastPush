@@ -1035,7 +1035,7 @@
             <div id="result-title-bottom" class="winner-subtitle">GREAT REACTION</div>
 
             <div style="margin-top: 4vh; text-align: center; color: rgba(255,255,255,0.6); font-size: 0.95rem;">
-                Aキー + Lキーを同時押しで次へ
+                まもなく次のラウンドへ進みます…
             </div>
         </div>
     </div>
@@ -1091,6 +1091,8 @@
         let p2Time = null;
         let goTimeoutId = null;
         let endTimerId = null;
+        let resultAdvanceTimerId = null;
+        const RESULT_DISPLAY_MS = 3000; // ラウンド結果を表示してから自動で次へ進むまでの時間
         
         let debugP1Ready = false;
         let debugP2Ready = false;
@@ -1222,19 +1224,6 @@
                 if (key === 'a') handlePush(1);
                 if (key === 'l') handlePush(2);
             }
-            else if (gameState === 'result' && document.getElementById('screen-result').classList.contains('active')) {
-                if (key === 'a') resultP1Approved = true;
-                if (key === 'l') resultP2Approved = true;
-
-                if (resultP1Approved && resultP2Approved) {
-                    // マッチが終わったか確認
-                    if (p1Score >= MAX_POINTS || p2Score >= MAX_POINTS) {
-                        showChampionScreen();
-                    } else {
-                        nextRound();
-                    }
-                }
-            }
             else if (gameState === 'finished' && document.getElementById('screen-champion').classList.contains('active')) {
                 if (key === 'a') resultP1Approved = true;
                 if (key === 'l') resultP2Approved = true;
@@ -1266,6 +1255,7 @@
 
         // 新しいラウンドを開始
         function startNewRound() {
+            if (resultAdvanceTimerId) { clearTimeout(resultAdvanceTimerId); resultAdvanceTimerId = null; }
             showScreen('screen-game');
             gameState = 'countdown';
             p1Time = null;
@@ -1509,8 +1499,17 @@
             overlay.classList.remove('show');
             
             showScreen('screen-result');
-            
-            // ※ A+L同時押しでの遷移処理に統合（keydownイベントで処理）
+
+            // 一定時間後、自動で次のラウンド（または優勝画面）へ進む
+            if (resultAdvanceTimerId) clearTimeout(resultAdvanceTimerId);
+            resultAdvanceTimerId = setTimeout(() => {
+                resultAdvanceTimerId = null;
+                if (p1Score >= MAX_POINTS || p2Score >= MAX_POINTS) {
+                    showChampionScreen();
+                } else {
+                    nextRound();
+                }
+            }, RESULT_DISPLAY_MS);
         }
 
         function drawDots(id, score, color) {
